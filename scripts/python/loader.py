@@ -33,8 +33,8 @@ class Loader():
                 user=user,
                 password=password,
                 database=dbName
-                ssl_disabled = True,
-                buffered = True
+                # ssl_disabled = True,
+                # buffered = True
             )
             cursor = connection.cursor()
 
@@ -53,5 +53,43 @@ class Loader():
             results.to_csv(path)
             return results
 
-        except Exception
-        
+        except Exception as e:
+            print(f"Error: {e}")
+
+
+    def close_connection(self, connection, cursor):
+        print("connection closed and transaction commited")
+
+    def create_table(self, cursor, file_sql, dbNAme: str) -> None:
+        sqlFile = file_sql
+        fd = open(sqlFile, 'r')
+        readsqlFile = fd.read()
+        fd.close()
+        sqlcommands = readsqlFile.split(';')
+        for command in sqlCommands:
+            try:
+                result = cursor.execute(command)
+                print(f"table created successfully")
+            except Exception as e:
+                print("command skipped: ", command)
+                print(e)
+    
+
+    def insert_into_table(self, cursor, connection, dbName: str, df: pd.DataFrame, table_name: str) -> None:
+        for _, row in df.iterrows():
+            sqlQuery = f"""INSERT INTO {table_name} 
+            (track_id, types, traveled_d, avg_speed, trajectory)
+                  VALUES(%s, %s, %s, %s, %s);"""
+
+            data = (row[0], row[1], row[2], row[3], (row[4]))
+            try:
+                cursor.execute(sqlQuery, data)
+                connection.commit()
+            except Exception as e:
+                connection.rollback()
+                print(e)
+        print('Data inserted successfully')
+
+
+if __name__=="__main__":
+    pass
